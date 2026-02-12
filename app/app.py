@@ -1,275 +1,298 @@
 """
-Streamlit Web Arayüzü
-=====================
-Phishing URL Tespiti için interaktif web arayüzü.
-Çalıştırma: streamlit run app/app.py
+PhishGuard-AI — Streamlit Web Arayuzu (Self-Learning)
+======================================================
+Phishing URL tespiti + otomatik ogrenme dongusu.
 """
 
 import os
 import sys
 import streamlit as st
-import pandas as pd
 import numpy as np
 
-# Proje kök dizini
+# Proje kokunu path'e ekle
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
 from src.feature_extraction import extract_features, FEATURE_NAMES
-from src.predict import load_model, predict_url
+from src.feedback_loop import (
+    check_url_safe_browsing, log_feedback,
+    get_feedback_stats, auto_retrain_if_ready
+)
 
-
-# ─────────────────────────────────────────────
-# Sayfa Yapılandırması
-# ─────────────────────────────────────────────
+# ── Sayfa Ayarlari ──
 st.set_page_config(
-    page_title="🛡️ Phishing URL Tespiti",
+    page_title="PhishGuard-AI",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ─────────────────────────────────────────────
-# CSS Stilleri
-# ─────────────────────────────────────────────
+# ── CSS Stilleri ──
 st.markdown("""
 <style>
     .main-header {
         text-align: center;
-        padding: 1rem 0;
-    }
-    .result-safe {
-        background: linear-gradient(135deg, #00C853, #69F0AE);
+        padding: 1rem;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        border-radius: 15px;
+        margin-bottom: 2rem;
         color: white;
-        padding: 1.5rem;
-        border-radius: 12px;
-        text-align: center;
-        font-size: 1.3rem;
-        font-weight: bold;
-        margin: 1rem 0;
-        box-shadow: 0 4px 15px rgba(0, 200, 83, 0.3);
+    }
+    .main-header h1 { font-size: 2.5rem; margin: 0; }
+    .main-header p { font-size: 1.1rem; opacity: 0.8; margin: 0.5rem 0 0 0; }
+    .result-safe {
+        padding: 1.5rem; border-radius: 12px; text-align: center;
+        background: linear-gradient(135deg, #00b09b, #96c93d);
+        color: white; font-size: 1.3rem; font-weight: bold;
     }
     .result-danger {
-        background: linear-gradient(135deg, #FF1744, #FF5252);
-        color: white;
-        padding: 1.5rem;
-        border-radius: 12px;
-        text-align: center;
-        font-size: 1.3rem;
-        font-weight: bold;
-        margin: 1rem 0;
-        box-shadow: 0 4px 15px rgba(255, 23, 68, 0.3);
+        padding: 1.5rem; border-radius: 12px; text-align: center;
+        background: linear-gradient(135deg, #e53935, #ff6f00);
+        color: white; font-size: 1.3rem; font-weight: bold;
     }
-    .feature-card {
-        background: #f8f9fa;
-        padding: 0.8rem;
-        border-radius: 8px;
-        border-left: 4px solid #2196F3;
-        margin: 0.3rem 0;
+    .feedback-box {
+        padding: 1rem; border-radius: 10px;
+        background: linear-gradient(135deg, #1e3a5f, #2d5986);
+        color: white; margin-top: 1rem;
     }
-    .metric-box {
-        background: white;
-        padding: 1rem;
-        border-radius: 10px;
-        text-align: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    .learn-box {
+        padding: 1rem; border-radius: 10px;
+        background: linear-gradient(135deg, #4a148c, #7b1fa2);
+        color: white; margin-top: 1rem;
     }
-    .stButton > button {
-        width: 100%;
-        padding: 0.6rem;
-        font-size: 1.1rem;
-        font-weight: bold;
-        border-radius: 8px;
+    .stat-card {
+        padding: 1rem; border-radius: 10px; text-align: center;
+        background: #1a1a2e; color: white; margin: 0.5rem 0;
     }
+    .stat-card h3 { margin: 0; font-size: 2rem; }
+    .stat-card p { margin: 0; opacity: 0.7; font-size: 0.9rem; }
 </style>
 """, unsafe_allow_html=True)
 
-
-# ─────────────────────────────────────────────
-# Başlık
-# ─────────────────────────────────────────────
-st.markdown("<div class='main-header'>", unsafe_allow_html=True)
-st.title("🛡️ Phishing URL Tespiti")
-st.markdown("**Machine Learning ile URL güvenlik analizi**")
-st.markdown("</div>", unsafe_allow_html=True)
-
-st.markdown("---")
+# ── Header ──
+st.markdown("""
+<div class="main-header">
+    <h1>🛡️ PhishGuard-AI</h1>
+    <p>Self-Learning Phishing URL Detection — Kendi Kendine Ogrenen Yapay Zeka</p>
+</div>
+""", unsafe_allow_html=True)
 
 
-# ─────────────────────────────────────────────
-# Sidebar
-# ─────────────────────────────────────────────
-with st.sidebar:
-    st.header("⚙️ Ayarlar")
-
-    # Model seçimi
+def load_model(model_path=None):
+    """Modeli ve scaler'i yukler."""
+    import joblib
     models_dir = os.path.join(PROJECT_ROOT, 'models')
-    available_models = []
+    if model_path is None:
+        model_path = os.path.join(models_dir, 'best_model.pkl')
+    if not os.path.exists(model_path):
+        # Herhangi bir pkl dosyasi bul
+        for f in os.listdir(models_dir):
+            if f.endswith('.pkl') and f != 'scaler.pkl':
+                model_path = os.path.join(models_dir, f)
+                break
+    model = joblib.load(model_path)
+    scaler_path = os.path.join(models_dir, 'scaler.pkl')
+    scaler = joblib.load(scaler_path) if os.path.exists(scaler_path) else None
+    return model, scaler
+
+
+# ── Sidebar ──
+with st.sidebar:
+    st.markdown("## ⚙️ Ayarlar")
+
+    # Model secimi
+    models_dir = os.path.join(PROJECT_ROOT, 'models')
+    model_files = []
     if os.path.exists(models_dir):
-        available_models = [f for f in os.listdir(models_dir) if f.endswith('.pkl') and f != 'scaler.pkl']
+        model_files = [f for f in os.listdir(models_dir)
+                       if f.endswith('.pkl') and f != 'scaler.pkl']
 
-    if available_models:
-        selected_model = st.selectbox(
-            "Model Seçin:",
-            available_models,
-            index=available_models.index('best_model.pkl') if 'best_model.pkl' in available_models else 0
-        )
-    else:
-        selected_model = None
-        st.warning("⚠️ Eğitilmiş model bulunamadı!\n\n`python src/train.py` komutunu çalıştırın.")
+    selected_model = st.selectbox("Model Sec", model_files,
+                                  index=0 if model_files else None)
 
+    # API key (opsiyonel)
     st.markdown("---")
+    st.markdown("## 🔑 API Ayarlari")
+    api_key = st.text_input("Google Safe Browsing API Key (opsiyonel)",
+                            type="password",
+                            help="API key olmadan da calisir (heuristic mod)")
+    if not api_key:
+        st.info("API key girilmedi. Heuristic dogrulama kullanilacak.")
 
-    st.header("📚 Hakkında")
-    st.markdown("""
-    Bu uygulama, URL'lerden çıkarılan **16 öznitelik** kullanarak
-    bir URL'nin **phishing** (kimlik avı) olup olmadığını tespit eder.
-
-    **Kullanılan Öznitelikler:**
-    - URL uzunluğu
-    - Domain analizi
-    - IP adresi kontrolü
-    - Özel karakter sayısı
-    - Alt domain derinliği
-    - Ve daha fazlası...
-    """)
-
+    # Feedback istatistikleri
     st.markdown("---")
-    st.markdown("🎓 *Bilgisayar Mühendisliği Projesi*")
+    st.markdown("## 🧠 Ogrenme Durumu")
+    stats = get_feedback_stats()
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Toplam Analiz", stats['total'])
+        st.metric("Dogrusu", stats['correct'])
+    with col2:
+        st.metric("Model Dogrulugu",
+                   f"{stats['accuracy']:.0%}" if stats['total'] > 0 else "-%")
+        st.metric("Hatali", stats['incorrect'])
+
+    # Yeniden egitim durumu
+    if stats['total'] > 0:
+        progress = min(stats['total'] / 50, 1.0)
+        st.progress(progress, text=f"Yeniden egitim: {stats['total']}/50")
+
+        if stats['ready_to_retrain']:
+            st.success("Yeterli veri birikti!")
+            if st.button("🔄 Modeli Yeniden Egit", type="primary"):
+                with st.spinner("Model yeniden egitiliyor..."):
+                    result = auto_retrain_if_ready(force=True)
+                    if result['retrained']:
+                        st.success(f"Dogruluk: {result['old_accuracy']:.2%} → {result['new_accuracy']:.2%}")
+                        st.balloons()
+                    else:
+                        st.warning(result['message'])
+
+    # Ornek URL'ler
+    st.markdown("---")
+    st.markdown("## 🔗 Ornek URL'ler")
+    examples = {
+        "Google (Guvenli)": "https://www.google.com/search?q=python",
+        "YouTube (Guvenli)": "https://www.youtube.com/watch?v=abc123",
+        "Phishing (IP)": "http://192.168.1.1/admin/login.php",
+        "Phishing (TLD)": "http://paypal-secure-login.tk/verify",
+        "Phishing (Kisaltma)": "https://bit.ly/3xYz123",
+        "Phishing (@)": "http://google.com@malicious.tk/steal",
+    }
+    for label, url in examples.items():
+        if st.button(label, key=f"ex_{label}", use_container_width=True):
+            st.session_state['example_url'] = url
 
 
-# ─────────────────────────────────────────────
-# Ana Alan
-# ─────────────────────────────────────────────
-col1, col2 = st.columns([2, 1])
+# ── Ana Icerik ──
+col_input, col_btn = st.columns([4, 1])
+with col_input:
+    default_url = st.session_state.get('example_url', '')
+    url_input = st.text_input("🔗 URL girin:", value=default_url,
+                              placeholder="https://example.com/login")
+    if 'example_url' in st.session_state:
+        del st.session_state['example_url']
 
-with col1:
-    st.subheader("🔗 URL Girin")
-    url_input = st.text_input(
-        "Analiz edilecek URL:",
-        placeholder="https://example.com/login",
-        label_visibility="collapsed"
-    )
-
+with col_btn:
+    st.markdown("<br>", unsafe_allow_html=True)
     analyze_btn = st.button("🔍 Analiz Et", type="primary", use_container_width=True)
 
-with col2:
-    st.subheader("📌 Örnek URL'ler")
-    example_urls = {
-        "✅ Google": "https://www.google.com/search?q=python",
-        "✅ GitHub": "https://github.com/features",
-        "🚨 Sahte PayPal": "http://paypal-secure-login.tk/update",
-        "🚨 IP Tabanlı": "http://192.168.1.1/admin/login.php",
-        "🚨 Kısaltılmış": "http://bit.ly/xk9f2m",
-    }
 
-    for label, url in example_urls.items():
-        if st.button(label, key=f"example_{label}", use_container_width=True):
-            url_input = url
-            analyze_btn = True
-
-
-# ─────────────────────────────────────────────
-# Analiz Sonucu
-# ─────────────────────────────────────────────
 if analyze_btn and url_input and selected_model:
-    with st.spinner("🔄 Analiz ediliyor..."):
+    with st.spinner("Analiz ediliyor..."):
         try:
+            # 1. Model tahmini
             model_path = os.path.join(models_dir, selected_model)
             model, scaler = load_model(model_path)
-            result = predict_url(url_input, model, scaler)
+            features = extract_features(url_input)
+            X = np.array([[features[f] for f in FEATURE_NAMES]])
+            if scaler:
+                X_scaled = scaler.transform(X)
+            else:
+                X_scaled = X
+            prediction = model.predict(X_scaled)[0]
+            proba = model.predict_proba(X_scaled)[0]
+            confidence = max(proba) * 100
 
+            # 2. API / Heuristic dogrulama
+            api_result = check_url_safe_browsing(url_input, api_key or None)
+
+            # 3. Feedback kaydet
+            is_correct, api_label = log_feedback(
+                url_input, prediction, confidence / 100,
+                api_result, features
+            )
+
+            # ── Sonuclari Goster ──
             st.markdown("---")
 
-            # Sonuç gösterimi
-            if result['prediction'] == 1:
-                st.markdown(
-                    f"<div class='result-danger'>"
-                    f"🚨 PHISHING TESPİT EDİLDİ!<br>"
-                    f"<small>Güven: {result['confidence']:.1f}%</small>"
-                    f"</div>",
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown(
-                    f"<div class='result-safe'>"
-                    f"✅ GÜVENLİ URL<br>"
-                    f"<small>Güven: {result['confidence']:.1f}%</small>"
-                    f"</div>",
-                    unsafe_allow_html=True
-                )
+            # Model Sonucu
+            col_model, col_api = st.columns(2)
 
-            # Metrikler
-            col_a, col_b, col_c = st.columns(3)
-            with col_a:
-                st.metric("Sonuç", result['label'])
-            with col_b:
-                st.metric("Güven", f"{result['confidence']:.1f}%")
-            with col_c:
-                risk_level = "Yüksek" if result['prediction'] == 1 else "Düşük"
-                st.metric("Risk Seviyesi", risk_level)
+            with col_model:
+                st.markdown("### 🤖 Model Tahmini")
+                if prediction == 1:
+                    st.markdown(f'<div class="result-danger">🚨 PHISHING TESPIT EDILDI!<br>'
+                                f'Guven: %{confidence:.1f}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="result-safe">✅ GUVENLI URL<br>'
+                                f'Guven: %{confidence:.1f}</div>', unsafe_allow_html=True)
 
-            # Öznitelik detayları
+            with col_api:
+                st.markdown(f"### 🔍 Dogrulama ({api_result['source'].split('(')[0].strip()})")
+                if api_result['is_malicious']:
+                    st.markdown(f'<div class="result-danger">🚨 TEHLIKELI<br>'
+                                f'{api_result["details"]}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="result-safe">✅ TEMIZ<br>'
+                                f'{api_result["details"]}</div>', unsafe_allow_html=True)
+
+            # Uyum Durumu
             st.markdown("---")
-            st.subheader("📊 Çıkarılan Öznitelikler")
-
-            features = result['features']
-            feat_df = pd.DataFrame([
-                {"Öznitelik": k, "Değer": v}
-                for k, v in features.items()
-            ])
-            st.dataframe(feat_df, use_container_width=True, hide_index=True)
-
-            # Risk faktörleri
-            st.subheader("⚠️ Risk Faktörleri")
-            risk_factors = []
-            if features.get('has_ip'):
-                risk_factors.append("🔴 URL'de IP adresi kullanılıyor")
-            if features.get('has_at_sign'):
-                risk_factors.append("🔴 URL'de '@' işareti var")
-            if features.get('has_double_slash'):
-                risk_factors.append("🟡 Çift '//' yönlendirmesi tespit edildi")
-            if features.get('has_shortener'):
-                risk_factors.append("🟡 URL kısaltma servisi kullanılıyor")
-            if features.get('suspicious_tld'):
-                risk_factors.append("🔴 Şüpheli TLD kullanılıyor")
-            if features.get('has_dash'):
-                risk_factors.append("🟡 Domain'de '-' işareti var")
-            if not features.get('has_https'):
-                risk_factors.append("🟡 HTTPS kullanılmıyor")
-            if features.get('url_length', 0) > 75:
-                risk_factors.append("🟡 URL normalden uzun")
-            if features.get('subdomain_count', 0) > 2:
-                risk_factors.append("🔴 Çok fazla alt domain")
-            if features.get('num_special_chars', 0) > 5:
-                risk_factors.append("🟡 Çok fazla özel karakter")
-
-            if risk_factors:
-                for rf in risk_factors:
-                    st.markdown(f"- {rf}")
+            if is_correct:
+                st.success("✅ **Model ve dogrulama kaynagi ayni sonuca ulasti.** Model bu ornegi dogruladi.")
             else:
-                st.success("Belirgin bir risk faktörü tespit edilmedi.")
+                st.warning("⚠️ **Model ve dogrulama kaynagi farkli sonuc verdi!** "
+                           "Bu ornek feedback olarak kaydedildi. "
+                           "Model yeniden egitildiginde bu hatadan OGRENECEK.")
 
-        except FileNotFoundError as e:
-            st.error(f"❌ {str(e)}")
+            # Ogrenme Dongusu Bilgisi
+            updated_stats = get_feedback_stats()
+            st.markdown(f"""
+            <div class="learn-box">
+                <strong>🧠 Yapay Zeka Ogrenme Dongusu</strong><br>
+                <br>
+                📊 Toplam analiz: <strong>{updated_stats['total']}</strong> |
+                ✅ Dogru: <strong>{updated_stats['correct']}</strong> |
+                ❌ Hatali: <strong>{updated_stats['incorrect']}</strong><br>
+                <br>
+                📈 Model dogrulugu: <strong>{updated_stats['accuracy']:.1%}</strong> |
+                Yeniden egitim icin: <strong>{updated_stats['needed_for_retrain']}</strong> analiz daha<br>
+                <br>
+                <em>Her analiz modelin ogrenme verisine eklenir.
+                {50} analize ulasinca model otomatik yeniden egitilir ve DAHA IYI olur!</em>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Oznitlikler
+            with st.expander("📋 Cikarilan Oznitelikler (16 adet)"):
+                feat_col1, feat_col2 = st.columns(2)
+                feat_items = list(features.items())
+                mid = len(feat_items) // 2
+                with feat_col1:
+                    for k, v in feat_items[:mid]:
+                        risk = "🔴" if (k in ['has_ip', 'has_at_sign', 'has_double_slash',
+                                               'has_shortener', 'suspicious_tld'] and v == 1) else \
+                               "🟡" if (k == 'has_dash' and v == 1) or \
+                                       (k == 'has_https' and v == 0) else "🟢"
+                        st.text(f"{risk} {k}: {v}")
+                with feat_col2:
+                    for k, v in feat_items[mid:]:
+                        risk = "🔴" if (k in ['has_ip', 'has_at_sign', 'has_double_slash',
+                                               'has_shortener', 'suspicious_tld'] and v == 1) else \
+                               "🟡" if (k == 'has_dash' and v == 1) or \
+                                       (k == 'has_https' and v == 0) else "🟢"
+                        st.text(f"{risk} {k}: {v}")
+
+            # Otomatik retrain kontrolu
+            if updated_stats['ready_to_retrain']:
+                st.info("🔄 Yeterli veri birikti! Sol menuden 'Modeli Yeniden Egit' butonuna tiklayabilirsiniz.")
+
         except Exception as e:
-            st.error(f"❌ Bir hata oluştu: {str(e)}")
+            st.error(f"Hata: {str(e)}")
 
 elif analyze_btn and not url_input:
-    st.warning("⚠️ Lütfen bir URL girin.")
-
+    st.warning("Lutfen bir URL girin.")
 elif analyze_btn and not selected_model:
-    st.error("❌ Eğitilmiş model bulunamadı. Önce `python src/train.py` komutunu çalıştırın.")
+    st.warning("Lutfen bir model secin.")
 
-
-# ─────────────────────────────────────────────
-# Alt Bilgi
-# ─────────────────────────────────────────────
+# ── Alt Bilgi ──
 st.markdown("---")
-st.markdown(
-    "<div style='text-align: center; color: gray; font-size: 0.9rem;'>"
-    "🛡️ Phishing URL Tespiti — ML Projesi | "
-    "Algoritmalar: Random Forest, XGBoost, SVM, Logistic Regression"
-    "</div>",
-    unsafe_allow_html=True
-)
+st.markdown("""
+<div style="text-align: center; opacity: 0.6; font-size: 0.85rem;">
+    <strong>PhishGuard-AI</strong> — Self-Learning Phishing URL Detection System<br>
+    🧠 Yapay zeka ile kendi kendine ogrenen guvenlik sistemi<br>
+    Her analiz modelin ogrenme verisine eklenir ve model surekli iyilesir.
+</div>
+""", unsafe_allow_html=True)
