@@ -1,0 +1,23 @@
+{
+  "b1a65bd0a5e2a63c": {
+    "is_malicious": true,
+    "source": "Heuristic Analysis",
+    "confidence": 0.85,
+    "threat_type": "SOCIAL_ENGINEERING",
+    "details": "Suspeli TLD: .tk; HTTPS yok; Marka taklidi: paypal; Domain tire iceriyor"
+  },
+  "0424974c68530290": {
+    "is_malicious": false,
+    "source": "Heuristic (Whitelist)",
+    "confidence": 0.99,
+    "threat_type": "NONE",
+    "details": "Bilinen guvenli site: youtube.com"
+  },
+  "7ff636288e0926ad": {
+    "is_malicious": true,
+    "source": "Heuristic Analysis",
+    "confidence": 0.85,
+    "threat_type": "SOCIAL_ENGINEERING",
+    "details": "Suspeli TLD: .xyz; HTTPS yok; Marka taklidi: netflix; Domain tire iceriyor"
+  }
+}

@@ -1,7 +1,7 @@
 """
-PhishGuard-AI — Streamlit Web Arayuzu (Self-Learning)
-======================================================
-Phishing URL tespiti + otomatik ogrenme dongusu.
+PhishGuard-AI — Streamlit Web Arayuzu
+======================================
+Dark Cybersecurity Theme + Self-Learning AI
 """
 
 import os
@@ -9,7 +9,6 @@ import sys
 import streamlit as st
 import numpy as np
 
-# Proje kokunu path'e ekle
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
@@ -21,59 +20,236 @@ from src.feedback_loop import (
 
 # ── Sayfa Ayarlari ──
 st.set_page_config(
-    page_title="PhishGuard-AI",
+    page_title="PhishGuard-AI | Cyber Threat Detection",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ── CSS Stilleri ──
+# ══════════════════════════════════════════════════════════
+#  DARK CYBERSECURITY THEME — CSS
+# ══════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-    .main-header {
-        text-align: center;
-        padding: 1rem;
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-        border-radius: 15px;
-        margin-bottom: 2rem;
-        color: white;
+    /* ── Ana Arka Plan ── */
+    .stApp {
+        background: linear-gradient(180deg, #0a0e17 0%, #0d1321 50%, #0a0e17 100%);
     }
-    .main-header h1 { font-size: 2.5rem; margin: 0; }
-    .main-header p { font-size: 1.1rem; opacity: 0.8; margin: 0.5rem 0 0 0; }
+
+    /* ── Header ── */
+    .cyber-header {
+        text-align: center;
+        padding: 2rem 1rem;
+        background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+        border: 1px solid #00ff4120;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .cyber-header::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%;
+        width: 200%; height: 2px;
+        background: linear-gradient(90deg, transparent, #00ff41, transparent);
+        animation: scan 3s linear infinite;
+    }
+    @keyframes scan {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+    .cyber-header h1 {
+        font-family: 'Courier New', monospace;
+        font-size: 2.8rem;
+        color: #00ff41;
+        text-shadow: 0 0 20px #00ff4140, 0 0 40px #00ff4120;
+        margin: 0;
+        letter-spacing: 3px;
+    }
+    .cyber-header .subtitle {
+        color: #58a6ff;
+        font-size: 1rem;
+        margin-top: 0.5rem;
+        font-family: 'Courier New', monospace;
+        opacity: 0.8;
+    }
+    .cyber-header .tagline {
+        color: #8b949e;
+        font-size: 0.85rem;
+        margin-top: 0.3rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    /* ── Terminal Input Box ── */
+    .terminal-box {
+        background: #0d1117;
+        border: 1px solid #00ff4130;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+    }
+    .terminal-label {
+        color: #00ff41;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* ── Sonuc Kartlari ── */
     .result-safe {
-        padding: 1.5rem; border-radius: 12px; text-align: center;
-        background: linear-gradient(135deg, #00b09b, #96c93d);
-        color: white; font-size: 1.3rem; font-weight: bold;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+        background: linear-gradient(135deg, #0d1117 0%, #0d2818 100%);
+        border: 2px solid #00ff41;
+        color: #00ff41;
+        font-family: 'Courier New', monospace;
+        font-size: 1.2rem;
+        font-weight: bold;
+        box-shadow: 0 0 20px #00ff4115, inset 0 0 20px #00ff4108;
     }
     .result-danger {
-        padding: 1.5rem; border-radius: 12px; text-align: center;
-        background: linear-gradient(135deg, #e53935, #ff6f00);
-        color: white; font-size: 1.3rem; font-weight: bold;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+        background: linear-gradient(135deg, #0d1117 0%, #2d0a0a 100%);
+        border: 2px solid #ff4444;
+        color: #ff4444;
+        font-family: 'Courier New', monospace;
+        font-size: 1.2rem;
+        font-weight: bold;
+        box-shadow: 0 0 20px #ff444415, inset 0 0 20px #ff444408;
+        animation: pulse-danger 2s ease-in-out infinite;
     }
-    .feedback-box {
-        padding: 1rem; border-radius: 10px;
-        background: linear-gradient(135deg, #1e3a5f, #2d5986);
-        color: white; margin-top: 1rem;
+    @keyframes pulse-danger {
+        0%, 100% { box-shadow: 0 0 20px #ff444415; }
+        50% { box-shadow: 0 0 30px #ff444430; }
     }
+
+    /* ── Bilgi Kartlari ── */
+    .info-card {
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+    }
+    .info-card h4 {
+        color: #58a6ff;
+        font-family: 'Courier New', monospace;
+        margin: 0 0 0.5rem 0;
+        font-size: 0.95rem;
+    }
+
+    /* ── Ogrenme Kutusu ── */
     .learn-box {
-        padding: 1rem; border-radius: 10px;
-        background: linear-gradient(135deg, #4a148c, #7b1fa2);
-        color: white; margin-top: 1rem;
+        background: linear-gradient(135deg, #0d1117 0%, #1a0a2e 100%);
+        border: 1px solid #8b5cf620;
+        border-radius: 12px;
+        padding: 1.2rem;
+        margin: 1rem 0;
+        color: #c9d1d9;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
     }
+    .learn-box strong { color: #8b5cf6; }
+
+    /* ── Match/Mismatch Kutusu ── */
+    .match-box {
+        background: #0d2818;
+        border: 1px solid #00ff4130;
+        border-radius: 10px;
+        padding: 1rem;
+        color: #00ff41;
+        font-family: 'Courier New', monospace;
+        text-align: center;
+    }
+    .mismatch-box {
+        background: #2d1a00;
+        border: 1px solid #ff880030;
+        border-radius: 10px;
+        padding: 1rem;
+        color: #ff8800;
+        font-family: 'Courier New', monospace;
+        text-align: center;
+    }
+
+    /* ── Stat Card ── */
     .stat-card {
-        padding: 1rem; border-radius: 10px; text-align: center;
-        background: #1a1a2e; color: white; margin: 0.5rem 0;
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        padding: 0.8rem;
+        text-align: center;
     }
-    .stat-card h3 { margin: 0; font-size: 2rem; }
-    .stat-card p { margin: 0; opacity: 0.7; font-size: 0.9rem; }
+    .stat-card .stat-value {
+        color: #00ff41;
+        font-family: 'Courier New', monospace;
+        font-size: 1.8rem;
+        font-weight: bold;
+    }
+    .stat-card .stat-label {
+        color: #8b949e;
+        font-size: 0.75rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    /* ── Feature Grid ── */
+    .feat-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.3rem 0.5rem;
+        border-bottom: 1px solid #21262d;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+    }
+    .feat-name { color: #8b949e; }
+    .feat-val { color: #58a6ff; font-weight: bold; }
+    .feat-danger { color: #ff4444; font-weight: bold; }
+    .feat-warn { color: #ff8800; font-weight: bold; }
+    .feat-safe { color: #00ff41; font-weight: bold; }
+
+    /* ── Footer ── */
+    .cyber-footer {
+        text-align: center;
+        padding: 1.5rem;
+        margin-top: 2rem;
+        border-top: 1px solid #21262d;
+        color: #484f58;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+    }
+    .cyber-footer .glow { color: #00ff41; text-shadow: 0 0 10px #00ff4140; }
+
+    /* ── Sidebar ── */
+    section[data-testid="stSidebar"] {
+        background: #0d1117;
+        border-right: 1px solid #21262d;
+    }
+    section[data-testid="stSidebar"] .stMarkdown h2 {
+        color: #00ff41;
+        font-family: 'Courier New', monospace;
+        font-size: 1rem;
+        border-bottom: 1px solid #21262d;
+        padding-bottom: 0.5rem;
+    }
+
+    /* ── Genel Metin ── */
+    .stMarkdown { color: #c9d1d9; }
+    .stMarkdown h3 {
+        color: #58a6ff;
+        font-family: 'Courier New', monospace;
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # ── Header ──
 st.markdown("""
-<div class="main-header">
-    <h1>🛡️ PhishGuard-AI</h1>
-    <p>Self-Learning Phishing URL Detection — Kendi Kendine Ogrenen Yapay Zeka</p>
+<div class="cyber-header">
+    <h1>[PHISHGUARD-AI]</h1>
+    <div class="subtitle">&gt; Self-Learning Phishing URL Detection System_</div>
+    <div class="tagline">// AI-powered threat analysis with real-time verification</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -85,7 +261,6 @@ def load_model(model_path=None):
     if model_path is None:
         model_path = os.path.join(models_dir, 'best_model.pkl')
     if not os.path.exists(model_path):
-        # Herhangi bir pkl dosyasi bul
         for f in os.listdir(models_dir):
             if f.endswith('.pkl') and f != 'scaler.pkl':
                 model_path = os.path.join(models_dir, f)
@@ -96,101 +271,116 @@ def load_model(model_path=None):
     return model, scaler
 
 
-# ── Sidebar ──
+# ══════════════════════════════════════════════════════════
+#  SIDEBAR
+# ══════════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("## ⚙️ Ayarlar")
+    st.markdown("## > MODEL_CONFIG")
 
-    # Model secimi
     models_dir = os.path.join(PROJECT_ROOT, 'models')
     model_files = []
     if os.path.exists(models_dir):
         model_files = [f for f in os.listdir(models_dir)
                        if f.endswith('.pkl') and f != 'scaler.pkl']
 
-    selected_model = st.selectbox("Model Sec", model_files,
+    selected_model = st.selectbox("Classifier:", model_files,
                                   index=0 if model_files else None)
 
-    # API key (opsiyonel)
     st.markdown("---")
-    st.markdown("## 🔑 API Ayarlari")
-    api_key = st.text_input("Google Safe Browsing API Key (opsiyonel)",
+    st.markdown("## > API_CONFIG")
+    api_key = st.text_input("Safe Browsing API Key:",
                             type="password",
-                            help="API key olmadan da calisir (heuristic mod)")
+                            help="Opsiyonel. Yoksa heuristic analiz kullanilir.")
     if not api_key:
-        st.info("API key girilmedi. Heuristic dogrulama kullanilacak.")
+        st.caption("_// heuristic mode active_")
 
-    # Feedback istatistikleri
+    # ── Ogrenme Istatistikleri ──
     st.markdown("---")
-    st.markdown("## 🧠 Ogrenme Durumu")
+    st.markdown("## > AI_LEARNING_STATUS")
     stats = get_feedback_stats()
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Toplam Analiz", stats['total'])
-        st.metric("Dogrusu", stats['correct'])
-    with col2:
-        st.metric("Model Dogrulugu",
-                   f"{stats['accuracy']:.0%}" if stats['total'] > 0 else "-%")
-        st.metric("Hatali", stats['incorrect'])
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown(f"""
+        <div class="stat-card">
+            <div class="stat-value">{stats['total']}</div>
+            <div class="stat-label">TOTAL SCANS</div>
+        </div>""", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="stat-card">
+            <div class="stat-value" style="color:#00ff41">{stats['correct']}</div>
+            <div class="stat-label">CORRECT</div>
+        </div>""", unsafe_allow_html=True)
+    with c2:
+        acc_str = f"{stats['accuracy']:.0%}" if stats['total'] > 0 else "--"
+        st.markdown(f"""
+        <div class="stat-card">
+            <div class="stat-value" style="color:#58a6ff">{acc_str}</div>
+            <div class="stat-label">ACCURACY</div>
+        </div>""", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="stat-card">
+            <div class="stat-value" style="color:#ff4444">{stats['incorrect']}</div>
+            <div class="stat-label">ERRORS</div>
+        </div>""", unsafe_allow_html=True)
 
-    # Yeniden egitim durumu
     if stats['total'] > 0:
         progress = min(stats['total'] / 50, 1.0)
-        st.progress(progress, text=f"Yeniden egitim: {stats['total']}/50")
+        st.progress(progress, text=f"Retrain: {stats['total']}/50")
 
         if stats['ready_to_retrain']:
-            st.success("Yeterli veri birikti!")
-            if st.button("🔄 Modeli Yeniden Egit", type="primary"):
-                with st.spinner("Model yeniden egitiliyor..."):
+            st.success("Ready to retrain!")
+            if st.button(">> RETRAIN MODEL <<", type="primary"):
+                with st.spinner("Retraining..."):
                     result = auto_retrain_if_ready(force=True)
                     if result['retrained']:
-                        st.success(f"Dogruluk: {result['old_accuracy']:.2%} → {result['new_accuracy']:.2%}")
+                        st.success(f"{result['old_accuracy']:.1%} -> {result['new_accuracy']:.1%}")
                         st.balloons()
-                    else:
-                        st.warning(result['message'])
 
-    # Ornek URL'ler
+    # ── Ornek URL'ler ──
     st.markdown("---")
-    st.markdown("## 🔗 Ornek URL'ler")
+    st.markdown("## > TEST_URLS")
     examples = {
-        "Google (Guvenli)": "https://www.google.com/search?q=python",
-        "YouTube (Guvenli)": "https://www.youtube.com/watch?v=abc123",
-        "Phishing (IP)": "http://192.168.1.1/admin/login.php",
-        "Phishing (TLD)": "http://paypal-secure-login.tk/verify",
-        "Phishing (Kisaltma)": "https://bit.ly/3xYz123",
-        "Phishing (@)": "http://google.com@malicious.tk/steal",
+        "[SAFE] google.com": "https://www.google.com/search?q=python",
+        "[SAFE] youtube.com": "https://www.youtube.com/watch?v=abc123",
+        "[THREAT] IP-based": "http://192.168.1.1/admin/login.php",
+        "[THREAT] fake-tld": "http://paypal-secure-login.tk/verify",
+        "[THREAT] shortener": "https://bit.ly/3xYz123",
+        "[THREAT] @-attack": "http://google.com@malicious.tk/steal",
     }
     for label, url in examples.items():
         if st.button(label, key=f"ex_{label}", use_container_width=True):
             st.session_state['example_url'] = url
 
 
-# ── Ana Icerik ──
-col_input, col_btn = st.columns([4, 1])
+# ══════════════════════════════════════════════════════════
+#  ANA ICERIK
+# ══════════════════════════════════════════════════════════
+
+# Input alani
+st.markdown('<div class="terminal-label">&gt; TARGET_URL:</div>', unsafe_allow_html=True)
+col_input, col_btn = st.columns([5, 1])
 with col_input:
     default_url = st.session_state.get('example_url', '')
-    url_input = st.text_input("🔗 URL girin:", value=default_url,
-                              placeholder="https://example.com/login")
+    url_input = st.text_input("URL", value=default_url,
+                              placeholder="http://suspicious-link.tk/login",
+                              label_visibility="collapsed")
     if 'example_url' in st.session_state:
         del st.session_state['example_url']
-
 with col_btn:
-    st.markdown("<br>", unsafe_allow_html=True)
-    analyze_btn = st.button("🔍 Analiz Et", type="primary", use_container_width=True)
+    analyze_btn = st.button("SCAN", type="primary", use_container_width=True)
 
 
+# ── Analiz ──
 if analyze_btn and url_input and selected_model:
-    with st.spinner("Analiz ediliyor..."):
+    with st.spinner("Scanning target..."):
         try:
             # 1. Model tahmini
             model_path = os.path.join(models_dir, selected_model)
             model, scaler = load_model(model_path)
             features = extract_features(url_input)
             X = np.array([[features[f] for f in FEATURE_NAMES]])
-            if scaler:
-                X_scaled = scaler.transform(X)
-            else:
-                X_scaled = X
+            X_scaled = scaler.transform(X) if scaler else X
             prediction = model.predict(X_scaled)[0]
             proba = model.predict_proba(X_scaled)[0]
             confidence = max(proba) * 100
@@ -204,95 +394,118 @@ if analyze_btn and url_input and selected_model:
                 api_result, features
             )
 
-            # ── Sonuclari Goster ──
+            # ── SONUCLAR ──
             st.markdown("---")
 
-            # Model Sonucu
             col_model, col_api = st.columns(2)
 
             with col_model:
-                st.markdown("### 🤖 Model Tahmini")
+                st.markdown("### > MODEL_PREDICTION")
                 if prediction == 1:
-                    st.markdown(f'<div class="result-danger">🚨 PHISHING TESPIT EDILDI!<br>'
-                                f'Guven: %{confidence:.1f}</div>', unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div class="result-danger">
+                        &#9888; THREAT DETECTED<br>
+                        <span style="font-size:0.9rem">Classification: PHISHING</span><br>
+                        <span style="font-size:1.5rem">{confidence:.1f}%</span>
+                        <span style="font-size:0.8rem">confidence</span>
+                    </div>""", unsafe_allow_html=True)
                 else:
-                    st.markdown(f'<div class="result-safe">✅ GUVENLI URL<br>'
-                                f'Guven: %{confidence:.1f}</div>', unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div class="result-safe">
+                        &#10004; SECURE URL<br>
+                        <span style="font-size:0.9rem">Classification: LEGITIMATE</span><br>
+                        <span style="font-size:1.5rem">{confidence:.1f}%</span>
+                        <span style="font-size:0.8rem">confidence</span>
+                    </div>""", unsafe_allow_html=True)
 
             with col_api:
-                st.markdown(f"### 🔍 Dogrulama ({api_result['source'].split('(')[0].strip()})")
+                source = api_result['source'].split('(')[0].strip()
+                st.markdown(f"### > VERIFICATION [{source}]")
                 if api_result['is_malicious']:
-                    st.markdown(f'<div class="result-danger">🚨 TEHLIKELI<br>'
-                                f'{api_result["details"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div class="result-danger">
+                        &#9888; MALICIOUS<br>
+                        <span style="font-size:0.8rem">{api_result['details']}</span>
+                    </div>""", unsafe_allow_html=True)
                 else:
-                    st.markdown(f'<div class="result-safe">✅ TEMIZ<br>'
-                                f'{api_result["details"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div class="result-safe">
+                        &#10004; CLEAN<br>
+                        <span style="font-size:0.8rem">{api_result['details']}</span>
+                    </div>""", unsafe_allow_html=True)
 
-            # Uyum Durumu
-            st.markdown("---")
+            # Uyum durumu
+            st.markdown("")
             if is_correct:
-                st.success("✅ **Model ve dogrulama kaynagi ayni sonuca ulasti.** Model bu ornegi dogruladi.")
+                st.markdown("""
+                <div class="match-box">
+                    [MATCH] Model prediction confirmed by verification source.
+                    Result logged for continuous learning.
+                </div>""", unsafe_allow_html=True)
             else:
-                st.warning("⚠️ **Model ve dogrulama kaynagi farkli sonuc verdi!** "
-                           "Bu ornek feedback olarak kaydedildi. "
-                           "Model yeniden egitildiginde bu hatadan OGRENECEK.")
+                st.markdown("""
+                <div class="mismatch-box">
+                    [MISMATCH] Model disagrees with verification source!
+                    This sample has been flagged for retraining.
+                    The AI will LEARN from this error.
+                </div>""", unsafe_allow_html=True)
 
-            # Ogrenme Dongusu Bilgisi
+            # Ogrenme durumu
             updated_stats = get_feedback_stats()
+            remaining = updated_stats['needed_for_retrain']
             st.markdown(f"""
             <div class="learn-box">
-                <strong>🧠 Yapay Zeka Ogrenme Dongusu</strong><br>
+                <strong>&gt; AI_LEARNING_CYCLE</strong><br><br>
+                Total scans: <strong>{updated_stats['total']}</strong> |
+                Accuracy: <strong>{updated_stats['accuracy']:.1%}</strong> |
+                Errors: <strong>{updated_stats['incorrect']}</strong><br><br>
+                {f'Retrain in <strong>{remaining}</strong> more scans...' if remaining > 0
+                 else '<strong style="color:#00ff41">READY TO RETRAIN! Check sidebar.</strong>'}<br>
                 <br>
-                📊 Toplam analiz: <strong>{updated_stats['total']}</strong> |
-                ✅ Dogru: <strong>{updated_stats['correct']}</strong> |
-                ❌ Hatali: <strong>{updated_stats['incorrect']}</strong><br>
-                <br>
-                📈 Model dogrulugu: <strong>{updated_stats['accuracy']:.1%}</strong> |
-                Yeniden egitim icin: <strong>{updated_stats['needed_for_retrain']}</strong> analiz daha<br>
-                <br>
-                <em>Her analiz modelin ogrenme verisine eklenir.
-                {50} analize ulasinca model otomatik yeniden egitilir ve DAHA IYI olur!</em>
+                <em>// Every scan feeds the AI learning pipeline.</em><br>
+                <em>// Model auto-improves after 50 verified samples.</em>
             </div>
             """, unsafe_allow_html=True)
 
-            # Oznitlikler
-            with st.expander("📋 Cikarilan Oznitelikler (16 adet)"):
-                feat_col1, feat_col2 = st.columns(2)
-                feat_items = list(features.items())
-                mid = len(feat_items) // 2
-                with feat_col1:
-                    for k, v in feat_items[:mid]:
-                        risk = "🔴" if (k in ['has_ip', 'has_at_sign', 'has_double_slash',
-                                               'has_shortener', 'suspicious_tld'] and v == 1) else \
-                               "🟡" if (k == 'has_dash' and v == 1) or \
-                                       (k == 'has_https' and v == 0) else "🟢"
-                        st.text(f"{risk} {k}: {v}")
-                with feat_col2:
-                    for k, v in feat_items[mid:]:
-                        risk = "🔴" if (k in ['has_ip', 'has_at_sign', 'has_double_slash',
-                                               'has_shortener', 'suspicious_tld'] and v == 1) else \
-                               "🟡" if (k == 'has_dash' and v == 1) or \
-                                       (k == 'has_https' and v == 0) else "🟢"
-                        st.text(f"{risk} {k}: {v}")
+            # Feature detaylari
+            with st.expander(">> EXTRACTED_FEATURES [16 vectors]"):
+                for k, v in features.items():
+                    is_danger = (k in ['has_ip', 'has_at_sign', 'has_double_slash',
+                                       'has_shortener', 'suspicious_tld'] and v == 1)
+                    is_warn = ((k == 'has_dash' and v == 1) or
+                               (k == 'has_https' and v == 0))
+                    if is_danger:
+                        css = "feat-danger"
+                        icon = "[!]"
+                    elif is_warn:
+                        css = "feat-warn"
+                        icon = "[~]"
+                    else:
+                        css = "feat-safe"
+                        icon = "[+]"
+                    st.markdown(f"""
+                    <div class="feat-row">
+                        <span class="feat-name">{icon} {k}</span>
+                        <span class="{css}">{v}</span>
+                    </div>""", unsafe_allow_html=True)
 
-            # Otomatik retrain kontrolu
+            # Otomatik retrain
             if updated_stats['ready_to_retrain']:
-                st.info("🔄 Yeterli veri birikti! Sol menuden 'Modeli Yeniden Egit' butonuna tiklayabilirsiniz.")
+                st.info("Model ready for retraining. Use sidebar button.")
 
         except Exception as e:
-            st.error(f"Hata: {str(e)}")
+            st.error(f"ERROR: {str(e)}")
 
 elif analyze_btn and not url_input:
-    st.warning("Lutfen bir URL girin.")
+    st.warning("Enter a target URL to scan.")
 elif analyze_btn and not selected_model:
-    st.warning("Lutfen bir model secin.")
+    st.warning("Select a model from sidebar.")
 
-# ── Alt Bilgi ──
-st.markdown("---")
+# ── Footer ──
 st.markdown("""
-<div style="text-align: center; opacity: 0.6; font-size: 0.85rem;">
-    <strong>PhishGuard-AI</strong> — Self-Learning Phishing URL Detection System<br>
-    🧠 Yapay zeka ile kendi kendine ogrenen guvenlik sistemi<br>
-    Her analiz modelin ogrenme verisine eklenir ve model surekli iyilesir.
+<div class="cyber-footer">
+    <span class="glow">[PHISHGUARD-AI]</span> v2.0 — Self-Learning Cyber Threat Detection<br>
+    // Powered by Machine Learning | Active Learning Pipeline<br>
+    // Every scan makes the AI smarter_
 </div>
 """, unsafe_allow_html=True)

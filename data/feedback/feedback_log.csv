@@ -1,0 +1,7 @@
+timestamp,url,model_prediction,model_confidence,api_label,api_source,api_confidence,is_correct,threat_type,feat_url_length,feat_domain_length,feat_has_ip,feat_has_at_sign,feat_has_double_slash,feat_has_dash,feat_has_https,feat_num_dots,feat_num_digits,feat_num_special_chars,feat_subdomain_count,feat_path_length,feat_num_params,feat_has_shortener,feat_tld_length,feat_suspicious_tld
+2026-02-13T02:57:12.254134,http://paypal-secure-login.tk/verif,1,0.9995,1,Heuristic Analysis,0.85,1,SOCIAL_ENGINEERING,35,22,0,0,0,1,0,1,0,0,0,6,0,0,2,1
+2026-02-13T02:57:28.885149,https://www.youtube.com/watch?v=dQw4w9WgXcQ,0,0.9997,0,Heuristic (Whitelist),0.99,1,NONE,43,15,0,0,0,0,1,2,2,2,0,6,1,0,3,0
+2026-02-13T02:57:45.752177,http://netflix-billing-update.xyz/payment,1,0.9996,1,Heuristic Analysis,0.85,1,SOCIAL_ENGINEERING,41,26,0,0,0,1,0,1,0,0,0,8,0,0,3,1
+2026-02-13T02:58:14.303193,https://www.youtube.com/watch?v=dQw4w9WgXcQ,0,0.9997,0,Heuristic (Whitelist) (cached),0.99,1,NONE,43,15,0,0,0,0,1,2,2,2,0,6,1,0,3,0
+2026-02-13T03:01:03.604952,http://netflix-billing-update.xyz/payment,1,0.9996,1,Heuristic Analysis (cached),0.85,1,SOCIAL_ENGINEERING,41,26,0,0,0,1,0,1,0,0,0,8,0,0,3,1
+2026-02-13T05:22:26.106687,http://netflix-billing-update.xyz/payment,1,0.9996,1,Heuristic Analysis (cached),0.85,1,SOCIAL_ENGINEERING,41,26,0,0,0,1,0,1,0,0,0,8,0,0,3,1
