@@ -19,5 +19,19 @@
     "confidence": 0.85,
     "threat_type": "SOCIAL_ENGINEERING",
     "details": "Suspeli TLD: .xyz; HTTPS yok; Marka taklidi: netflix; Domain tire iceriyor"
+  },
+  "1d3622caa188832c": {
+    "is_malicious": true,
+    "source": "Heuristic Analysis",
+    "confidence": 0.85,
+    "threat_type": "SOCIAL_ENGINEERING",
+    "details": "Suspeli TLD: .tk; HTTPS yok; Marka taklidi: paypal; Domain tire iceriyor"
+  },
+  "c88956048fc2fc7d": {
+    "is_malicious": true,
+    "source": "Heuristic Analysis",
+    "confidence": 0.85,
+    "threat_type": "SOCIAL_ENGINEERING",
+    "details": "Suspeli TLD: .tk; HTTPS yok; Marka taklidi: paypal; Domain tire iceriyor"
   }
 }
