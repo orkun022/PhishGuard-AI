@@ -7,3 +7,5 @@ timestamp,url,model_prediction,model_confidence,api_label,api_source,api_confide
 2026-02-13T05:22:26.106687,http://netflix-billing-update.xyz/payment,1,0.9996,1,Heuristic Analysis (cached),0.85,1,SOCIAL_ENGINEERING,41,26,0,0,0,1,0,1,0,0,0,8,0,0,3,1
 2026-02-13T05:27:49.421917,http://paypal-secure-login.tk/verify?id=12345,1,0.9998,1,Heuristic Analysis,0.85,1,SOCIAL_ENGINEERING,45,22,0,0,0,1,0,1,5,2,0,7,1,0,2,1
 2026-02-13T05:29:05.616190,http://paypal-secure-login.tk/verify,1,0.9996,1,Heuristic Analysis,0.85,1,SOCIAL_ENGINEERING,36,22,0,0,0,1,0,1,0,0,0,7,0,0,2,1
+2026-02-13T05:44:22.200218,https://www.youtube.com/watch?v=aBRmSdIcgOs&t=2077s,0,0.9999,0,Heuristic (Whitelist),0.99,1,NONE,51,15,0,0,0,0,1,2,4,4,0,6,2,0,3,0
+2026-02-13T05:48:19.567694,https://phishguard-ai-lpfpaivvurcve3wsgzqjjp.streamlit.app/,1,0.9965,0,Heuristic Analysis,0.9,0,NONE,59,50,0,0,0,1,1,2,1,0,1,1,0,0,3,0

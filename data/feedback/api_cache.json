@@ -33,5 +33,19 @@
     "confidence": 0.85,
     "threat_type": "SOCIAL_ENGINEERING",
     "details": "Suspeli TLD: .tk; HTTPS yok; Marka taklidi: paypal; Domain tire iceriyor"
+  },
+  "cef25fb6e3808da2": {
+    "is_malicious": false,
+    "source": "Heuristic (Whitelist)",
+    "confidence": 0.99,
+    "threat_type": "NONE",
+    "details": "Bilinen guvenli site: youtube.com"
+  },
+  "6d9980dcedeb51f8": {
+    "is_malicious": false,
+    "source": "Heuristic Analysis",
+    "confidence": 0.9,
+    "threat_type": "NONE",
+    "details": "Domain tire iceriyor"
   }
 }

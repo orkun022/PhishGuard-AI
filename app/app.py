@@ -18,13 +18,44 @@ from src.feedback_loop import (
     get_feedback_stats, auto_retrain_if_ready
 )
 
-# ── Sayfa Ayarlari ──
+# ── Sayfa Ayarlari (MUST be first Streamlit command) ──
 st.set_page_config(
     page_title="PhishGuard-AI | Cyber Threat Detection",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+
+# ══════════════════════════════════════════════════════════
+#  AUTO-TRAIN: Model yoksa otomatik egit (Streamlit Cloud)
+# ══════════════════════════════════════════════════════════
+@st.cache_resource
+def ensure_models_exist():
+    """Model dosyalari yoksa otomatik olarak egitim yapar."""
+    import io, contextlib
+    models_dir = os.path.join(PROJECT_ROOT, 'models')
+    os.makedirs(models_dir, exist_ok=True)
+    pkl_files = [f for f in os.listdir(models_dir)
+                 if f.endswith('.pkl') and f != 'scaler.pkl']
+    if not pkl_files:
+        os.environ['PYTHONIOENCODING'] = 'utf-8'
+        # 1. Demo dataset olustur
+        from src.generate_dataset import generate_dataset, save_dataset
+        data_dir = os.path.join(PROJECT_ROOT, 'data', 'raw')
+        os.makedirs(data_dir, exist_ok=True)
+        csv_path = os.path.join(data_dir, 'phishing_urls.csv')
+        if not os.path.exists(csv_path):
+            data = generate_dataset()
+            save_dataset(data, csv_path)
+        # 2. Modeli egit (stdout yakalayarak encoding hatasini onle)
+        from src.train import main as train_main
+        with contextlib.redirect_stdout(io.StringIO()):
+            train_main()
+    return True
+
+ensure_models_exist()
+
 
 # ══════════════════════════════════════════════════════════
 #  DARK CYBERSECURITY THEME — CSS
