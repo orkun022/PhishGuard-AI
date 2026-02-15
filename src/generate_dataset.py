@@ -1,18 +1,9 @@
-"""
-Demo Veri Seti Oluşturucu
-=========================
-Gerçekçi phishing ve legitimate URL'lerden oluşan demo veri seti oluşturur.
-Bu scripti çalıştırarak data/raw/phishing_urls.csv dosyasını oluşturabilirsiniz.
-"""
-
 import csv
 import os
 import random
 
-# Proje kök dizini
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# --- Legitimate (Meşru) URL Şablonları ---
 LEGITIMATE_DOMAINS = [
     'google.com', 'youtube.com', 'facebook.com', 'amazon.com',
     'wikipedia.org', 'twitter.com', 'instagram.com', 'linkedin.com',
@@ -34,26 +25,19 @@ LEGITIMATE_PATHS = [
     '/products', '/services', '/blog', '/news', '/login',
     '/signup', '/pricing', '/features', '/docs', '/api',
     '/search', '/settings', '/profile', '/dashboard',
-    '/terms', '/privacy', '/careers', '/faq',
-    '/en/home', '/tr/giris',
 ]
 
 LEGITIMATE_PARAMS = [
     '', '?q=python', '?page=1', '?lang=en', '?ref=homepage',
     '?utm_source=google', '?id=12345', '?category=tech',
-    '?sort=newest', '?tab=overview',
 ]
 
-# --- Phishing URL Şablonları ---
 PHISHING_PATTERNS = [
-    # IP adresi kullanımı
     'http://192.168.{a}.{b}/login/secure',
     'http://10.0.{a}.{b}/paypal/signin',
     'http://172.16.{a}.{b}/bank/verify',
     'http://45.{a}.{b}.{c}/account-update',
     'http://185.{a}.{b}.{c}/secure-login.php',
-
-    # Şüpheli domain + meşru marka
     'http://paypal-secure-login.{tld}/update',
     'http://apple-id-verify.{tld}/confirm',
     'http://microsoft-account.{tld}/signin',
@@ -61,35 +45,16 @@ PHISHING_PATTERNS = [
     'http://amazon-delivery.{tld}/track',
     'http://netflix-billing.{tld}/payment',
     'http://facebook-security.{tld}/verify',
-    'http://instagram-support.{tld}/help',
-    'http://linkedin-verify.{tld}/confirm',
-    'http://twitter-security.{tld}/alert',
-
-    # Çok uzun URL'ler
     'http://suspicious-{word1}-{word2}-{word3}.{tld}/login/secure/update/verify/account',
     'http://free-{word1}.{tld}/win-{word2}/claim-now?id={num1}&ref={num2}&token={num3}',
-
-    # Alt domain kötüye kullanımı
     'http://login.paypal.com.{random}.{tld}/signin',
     'http://secure.apple.com.{random}.{tld}/verify',
-    'http://account.google.com.{random}.{tld}/auth',
-
-    # @ işareti kullanımı
     'http://www.paypal.com@{random}.{tld}/login',
     'http://secure.bank.com@{random}.{tld}/transfer',
-
-    # URL kısaltma servisleri
     'http://bit.ly/{short}',
     'http://tinyurl.com/{short}',
-
-    # Çift // yönlendirme
     'http://legitimate-site.com//http://{random}.{tld}/phishing',
-
-    # Rakam yoğun
     'http://{num1}{num2}{num3}.{tld}/verify-account/{num4}',
-    'http://secure{num1}.{tld}/login{num2}/auth{num3}',
-
-    # Şüpheli TLD kullanımı
     'http://free-iphone.{suspicious_tld}/claim-now',
     'http://login-update.{suspicious_tld}/secure',
     'http://account-verify.{suspicious_tld}/confirm',
@@ -101,7 +66,6 @@ PHISHING_WORDS = [
     'secure', 'login', 'update', 'verify', 'confirm',
     'account', 'billing', 'payment', 'bank', 'wallet',
     'crypto', 'free', 'prize', 'winner', 'urgent',
-    'alert', 'warning', 'suspended', 'limited', 'locked',
 ]
 
 SUSPICIOUS_TLDS_LIST = ['tk', 'ml', 'ga', 'cf', 'gq', 'xyz', 'top', 'buzz', 'club', 'work']
@@ -114,94 +78,58 @@ RANDOM_STRINGS = [
 ]
 
 
-def generate_legitimate_url() -> str:
-    """Gerçekçi bir meşru URL oluşturur."""
-    scheme = random.choice(['https'] * 9 + ['http'])  # %90 HTTPS
+def generate_legitimate_url():
+    scheme = random.choice(['https'] * 9 + ['http'])
     domain = random.choice(LEGITIMATE_DOMAINS)
     www = random.choice(['www.', ''] * 2 + [''])
     path = random.choice(LEGITIMATE_PATHS)
     params = random.choice(LEGITIMATE_PARAMS + [''] * 5)
-
     return f"{scheme}://{www}{domain}{path}{params}"
 
 
-def generate_phishing_url() -> str:
-    """Gerçekçi bir phishing URL oluşturur."""
+def generate_phishing_url():
     pattern = random.choice(PHISHING_PATTERNS)
-
     url = pattern.format(
-        a=random.randint(1, 254),
-        b=random.randint(1, 254),
+        a=random.randint(1, 254), b=random.randint(1, 254),
         c=random.randint(1, 254),
         tld=random.choice(NORMAL_TLDS + SUSPICIOUS_TLDS_LIST),
         suspicious_tld=random.choice(SUSPICIOUS_TLDS_LIST),
         random=random.choice(RANDOM_STRINGS),
-        word1=random.choice(PHISHING_WORDS),
-        word2=random.choice(PHISHING_WORDS),
+        word1=random.choice(PHISHING_WORDS), word2=random.choice(PHISHING_WORDS),
         word3=random.choice(PHISHING_WORDS),
-        num1=random.randint(100, 999),
-        num2=random.randint(100, 999),
-        num3=random.randint(100, 999),
-        num4=random.randint(100, 999),
+        num1=random.randint(100, 999), num2=random.randint(100, 999),
+        num3=random.randint(100, 999), num4=random.randint(100, 999),
         short=random.choice(RANDOM_STRINGS),
     )
-
     return url
 
 
-def generate_dataset(n_legitimate: int = 500, n_phishing: int = 500, seed: int = 42) -> list:
-    """
-    Demo veri seti oluşturur.
-
-    Parameters
-    ----------
-    n_legitimate : int
-        Legitimate URL sayısı.
-    n_phishing : int
-        Phishing URL sayısı.
-    seed : int
-        Random seed.
-
-    Returns
-    -------
-    list of tuple
-        (url, label) çiftleri.
-    """
+def generate_dataset(n_legitimate=500, n_phishing=500, seed=42):
     random.seed(seed)
-
     data = []
-
-    # Legitimate URL'ler (label=0)
     for _ in range(n_legitimate):
         data.append((generate_legitimate_url(), 0))
-
-    # Phishing URL'ler (label=1)
     for _ in range(n_phishing):
         data.append((generate_phishing_url(), 1))
-
-    # Karıştır
     random.shuffle(data)
     return data
 
 
-def save_dataset(data: list, filepath: str = None):
-    """Veri setini CSV olarak kaydeder."""
+def save_dataset(data, filepath=None):
     if filepath is None:
         filepath = os.path.join(PROJECT_ROOT, 'data', 'raw', 'phishing_urls.csv')
-
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
-
     with open(filepath, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerow(['url', 'label'])
         writer.writerows(data)
+    print(f"[+] Dataset kaydedildi: {filepath} ({len(data)} URL)")
 
-    print(f"[✓] Veri seti kaydedildi: {filepath}")
-    print(f"    Toplam: {len(data)} URL")
-    print(f"    Legitimate: {sum(1 for _, l in data if l == 0)}")
-    print(f"    Phishing:   {sum(1 for _, l in data if l == 1)}")
+
+def main():
+    data = generate_dataset(n_legitimate=500, n_phishing=500)
+    save_dataset(data)
 
 
 if __name__ == '__main__':
-    data = generate_dataset(n_legitimate=500, n_phishing=500)
-    save_dataset(data)
+    main()
