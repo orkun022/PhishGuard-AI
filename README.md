@@ -8,12 +8,9 @@
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.3%2B-orange?logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
 [![XGBoost](https://img.shields.io/badge/XGBoost-2.0%2B-red)](https://xgboost.readthedocs.io)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28%2B-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io)
-[![Live Demo](https://img.shields.io/badge/🔗_Live_Demo-phishguard--ai.streamlit.app-00C853)](https://phishguard-ai.streamlit.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 *Detect phishing URLs in real-time using 16 handcrafted features and 4 ML classifiers.*
-
-🔗 **[Live Demo →](https://phishguard-ai.streamlit.app)**
 
 </div>
 
