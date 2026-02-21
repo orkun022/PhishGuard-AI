@@ -47,5 +47,33 @@
     "confidence": 0.9,
     "threat_type": "NONE",
     "details": "Domain tire iceriyor"
+  },
+  "0b2df0f635584f42": {
+    "is_malicious": false,
+    "source": "Heuristic (Whitelist)",
+    "confidence": 0.99,
+    "threat_type": "NONE",
+    "details": "Guvenli site: facebook.com"
+  },
+  "dbae2d0204aa489e": {
+    "is_malicious": false,
+    "source": "Heuristic (Whitelist)",
+    "confidence": 0.99,
+    "threat_type": "NONE",
+    "details": "Guvenli site: youtube.com"
+  },
+  "aa67b719943ad25e": {
+    "is_malicious": false,
+    "source": "Heuristic (Whitelist)",
+    "confidence": 0.99,
+    "threat_type": "NONE",
+    "details": "Guvenli site: facebook.com"
+  },
+  "24d66eb77e5b46b4": {
+    "is_malicious": false,
+    "source": "Heuristic (Whitelist)",
+    "confidence": 0.99,
+    "threat_type": "NONE",
+    "details": "Guvenli site: facebook.com"
   }
 }

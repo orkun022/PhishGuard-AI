@@ -8,9 +8,12 @@
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.3%2B-orange?logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
 [![XGBoost](https://img.shields.io/badge/XGBoost-2.0%2B-red)](https://xgboost.readthedocs.io)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28%2B-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io)
+[![Live Demo](https://img.shields.io/badge/🔗_Live_Demo-phishguard--ai.streamlit.app-00C853)](https://phishguard-ai.streamlit.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 *Detect phishing URLs in real-time using 16 handcrafted features and 4 ML classifiers.*
+
+🔗 **[Live Demo →](https://phishguard-ai.streamlit.app)**
 
 </div>
 
@@ -65,6 +68,64 @@ Interactive **Streamlit** dashboard with:
 - Confidence score & risk level display
 - Extracted feature breakdown
 - Risk factor analysis with visual indicators
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        PhishGuard-AI Pipeline                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+                    ┌──────────────┐
+                    │   User URL   │
+                    │   Input      │
+                    └──────┬───────┘
+                           │
+                           ▼
+              ┌────────────────────────┐
+              │  LAYER 1: ML Engine    │
+              │                        │
+              │  Feature Extraction    │
+              │  (16 URL features)     │
+              │         │              │
+              │         ▼              │
+              │  StandardScaler        │
+              │         │              │
+              │         ▼              │
+              │  Model Prediction      │
+              │  (RF/SVM/XGB/LR)       │
+              │  + Confidence Score    │
+              └────────┬───────────────┘
+                       │
+                       ▼
+              ┌────────────────────────┐
+              │  LAYER 2: API Verify   │
+              │                        │
+              │  Google Safe Browsing  │
+              │  API check             │
+              │  + Heuristic fallback  │
+              └────────┬───────────────┘
+                       │
+                       ▼
+              ┌────────────────────────┐
+              │  LAYER 3: Self-Learn   │
+              │                        │
+              │  Compare ML vs API     │
+              │  Log feedback (JSON)   │
+              │  Auto-retrain after    │
+              │  50 verified samples   │
+              └────────┬───────────────┘
+                       │
+                       ▼
+              ┌────────────────────────┐
+              │  Dashboard Output      │
+              │                        │
+              │  Sonuç │ Features │    │
+              │  API   │ Geçmiş       │
+              └────────────────────────┘
+```
 
 ---
 
@@ -154,7 +215,7 @@ PhishGuard-AI/
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/PhishGuard-AI.git
+git clone https://github.com/orkun022/PhishGuard-AI.git
 cd PhishGuard-AI
 
 # Create virtual environment (recommended)

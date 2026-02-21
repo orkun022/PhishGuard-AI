@@ -9,3 +9,7 @@ timestamp,url,model_prediction,model_confidence,api_label,api_source,api_confide
 2026-02-13T05:29:05.616190,http://paypal-secure-login.tk/verify,1,0.9996,1,Heuristic Analysis,0.85,1,SOCIAL_ENGINEERING,36,22,0,0,0,1,0,1,0,0,0,7,0,0,2,1
 2026-02-13T05:44:22.200218,https://www.youtube.com/watch?v=aBRmSdIcgOs&t=2077s,0,0.9999,0,Heuristic (Whitelist),0.99,1,NONE,51,15,0,0,0,0,1,2,4,4,0,6,2,0,3,0
 2026-02-13T05:48:19.567694,https://phishguard-ai-lpfpaivvurcve3wsgzqjjp.streamlit.app/,1,0.9965,0,Heuristic Analysis,0.9,0,NONE,59,50,0,0,0,1,1,2,1,0,1,1,0,0,3,0
+2026-02-15T16:14:30.221689,https://www.facebook.com/,0,0.9993,0,Heuristic (Whitelist),0.99,1,NONE,25,16,0,0,0,0,1,2,0,0,0,1,0,0,3,0
+2026-02-15T23:54:47.383472,https://www.youtube.com/,0,0.9994,0,Heuristic (Whitelist),0.99,1,NONE,24,15,0,0,0,0,1,2,0,0,0,1,0,0,3,0
+2026-02-15T23:56:26.096483,https://www.facebook.com/fhasfbalgblş,0,0.9981,0,Heuristic (Whitelist),0.99,1,NONE,37,16,0,0,0,0,1,2,0,0,0,13,0,0,3,0
+2026-02-15T23:57:05.663661,https://www.facebook.com/fwasfgerfh43876,0,0.9637,0,Heuristic (Whitelist),0.99,1,NONE,40,16,0,0,0,0,1,2,5,0,0,16,0,0,3,0
