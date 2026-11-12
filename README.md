@@ -44,7 +44,9 @@ The hostname grouping is not a full public-suffix/registered-domain split: relat
 
 ## Interface
 
-The Streamlit app provides single-URL analysis, all 16 features, session history, CSV batch review (up to 1,000 rows / 2 MB), per-row errors, result export, model comparisons and evaluation JSON download. Model scores are explicitly uncalibrated and do not prove safety.
+The Streamlit dashboard uses a sidebar to separate **URL analysis**, **Batch review**, **Model performance**, and **Scan history**. It includes light/dark appearance, session summary cards, URL feature badges, an explicit model score, and model comparison charts.
+
+Single-URL reviews include all 16 features. Batch review supports up to 1,000 rows / 2 MB, per-row validation errors, a CSV template, progress feedback, and CSV export. Session history holds the last 20 single-URL reviews and can be exported or cleared. Model performance includes holdout F1/recall charts, detailed metrics, a confusion matrix, and evaluation JSON download. Model scores are explicitly uncalibrated and do not prove safety.
 
 Predictions do not open the submitted address. An **optional, explicit** Google Safe Browsing lookup sends the selected URL to Google using your API key. A no-match or lookup failure remains unknown. Automatic feedback retraining is disabled; use reviewed labeled data for explicit training.
 
