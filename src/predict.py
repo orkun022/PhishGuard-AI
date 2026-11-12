@@ -6,7 +6,7 @@ import numpy as np
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
-from src.feature_extraction import extract_features, FEATURE_NAMES
+from src.feature_extraction import extract_features, FEATURE_NAMES, normalize_url
 
 
 def load_model(model_path=None):
@@ -19,7 +19,7 @@ def load_model(model_path=None):
         raise FileNotFoundError(f"Model bulunamadi: {model_path}")
 
     model = joblib.load(model_path)
-    scaler = joblib.load(scaler_path) if os.path.exists(scaler_path) else None
+    scaler = joblib.load(scaler_path) if os.path.exists(scaler_path) and not hasattr(model, 'named_steps') else None
     return model, scaler
 
 
@@ -27,6 +27,7 @@ def predict_url(url, model=None, scaler=None):
     if model is None:
         model, scaler = load_model()
 
+    url = normalize_url(url)
     features = extract_features(url)
     X = np.array([[features[f] for f in FEATURE_NAMES]])
 
@@ -64,7 +65,8 @@ def main():
     args = parser.parse_args()
 
     if args.url:
-        result = predict_url(args.url)
+        model, scaler = load_model(args.model)
+        result = predict_url(args.url, model, scaler)
         print(f"\nURL: {result['url']}")
         print(f"Sonuc: {result['label']}")
         print(f"Guven: {result['confidence']:.1f}%")
@@ -74,7 +76,7 @@ def main():
     else:
         print("\nPhishing URL Tespiti - Interaktif Mod")
         print("Cikmak icin 'q' yazin.\n")
-        model, scaler = load_model()
+        model, scaler = load_model(args.model)
         while True:
             url = input("URL girin: ").strip()
             if url.lower() in ('q', 'quit', 'exit'):
@@ -87,3 +89,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

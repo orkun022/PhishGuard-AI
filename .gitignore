@@ -38,3 +38,9 @@ reports/figures/*.png
 # OS
 .DS_Store
 Thumbs.db
+
+
+# Local trained models and measured outputs
+models/*.joblib
+models/*.pkl
+reports/metrics.json

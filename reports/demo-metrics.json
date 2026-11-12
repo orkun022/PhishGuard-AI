@@ -1,0 +1,95 @@
+{
+  "selected_model": "Logistic Regression",
+  "selection_metric": "training CV F1",
+  "holdout_split": "hostname groups",
+  "dataset_kind": "synthetic_demo",
+  "train_samples": 699,
+  "test_samples": 155,
+  "cv_folds": 3,
+  "random_state": 42,
+  "trained_at": "2026-11-12T11:18:37.556914+00:00",
+  "results": {
+    "Logistic Regression": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "roc_auc": 1.0,
+      "cv_mean": 0.9760589318600368,
+      "cv_std": 0.033857783261234335,
+      "confusion_matrix": [
+        [
+          76,
+          0
+        ],
+        [
+          0,
+          79
+        ]
+      ]
+    },
+    "Random Forest": {
+      "accuracy": 0.9935483870967742,
+      "precision": 1.0,
+      "recall": 0.9873417721518988,
+      "f1": 0.9936305732484076,
+      "roc_auc": 0.9998334443704198,
+      "cv_mean": 0.9760589318600368,
+      "cv_std": 0.033857783261234335,
+      "confusion_matrix": [
+        [
+          76,
+          0
+        ],
+        [
+          1,
+          78
+        ]
+      ]
+    },
+    "SVM": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "roc_auc": 1.0,
+      "cv_mean": 0.9760589318600368,
+      "cv_std": 0.033857783261234335,
+      "confusion_matrix": [
+        [
+          76,
+          0
+        ],
+        [
+          0,
+          79
+        ]
+      ]
+    },
+    "XGBoost": {
+      "accuracy": 0.9806451612903225,
+      "precision": 0.9871794871794872,
+      "recall": 0.9746835443037974,
+      "f1": 0.9808917197452229,
+      "roc_auc": 0.9976682211858762,
+      "cv_mean": 0.9743495301506351,
+      "cv_std": 0.032716109031579836,
+      "confusion_matrix": [
+        [
+          75,
+          1
+        ],
+        [
+          2,
+          77
+        ]
+      ]
+    }
+  },
+  "environment": {
+    "python": "3.12.14",
+    "scikit-learn": "1.8.0",
+    "numpy": "2.3.5",
+    "pandas": "2.2.3"
+  }
+}

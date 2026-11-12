@@ -1,129 +1,89 @@
-import os
+"""Reproducible model comparison: CV selects the model; holdout only reports."""
+import argparse
+import json
 import sys
-import time
-import warnings
-import numpy as np
+from datetime import datetime, timezone
+from pathlib import Path
 import joblib
-from sklearn.linear_model import LogisticRegression
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+from sklearn.model_selection import cross_val_score, StratifiedGroupKFold, StratifiedKFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from sklearn.model_selection import cross_val_score
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-warnings.filterwarnings('ignore')
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, PROJECT_ROOT)
-
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
 from src.preprocessing import prepare_data
 from src.feature_extraction import FEATURE_NAMES
-from src.utils import (
-    plot_confusion_matrix, plot_roc_curve,
-    plot_feature_importance, plot_model_comparison,
-    print_classification_report
-)
-
 
 def get_models():
-    models = {
-        'Logistic Regression': LogisticRegression(max_iter=1000, random_state=42, C=1.0),
-        'Random Forest': RandomForestClassifier(
-            n_estimators=200, max_depth=20, min_samples_split=5,
-            min_samples_leaf=2, random_state=42, n_jobs=-1,
-        ),
-        'SVM': SVC(kernel='rbf', C=10.0, gamma='scale', probability=True, random_state=42),
+    estimators = {
+        'Logistic Regression': LogisticRegression(max_iter=1500, random_state=42, class_weight='balanced'),
+        'Random Forest': RandomForestClassifier(n_estimators=150, min_samples_leaf=2, random_state=42, n_jobs=-1, class_weight='balanced'),
+        'SVM': SVC(probability=True, random_state=42, class_weight='balanced'),
     }
-
     try:
         from xgboost import XGBClassifier
-        models['XGBoost'] = XGBClassifier(
-            n_estimators=200, max_depth=8, learning_rate=0.1,
-            subsample=0.8, colsample_bytree=0.8, random_state=42,
-            use_label_encoder=False, eval_metric='logloss',
-        )
+        estimators['XGBoost'] = XGBClassifier(n_estimators=150, max_depth=4, learning_rate=0.05, subsample=0.8, colsample_bytree=0.8, random_state=42, n_jobs=2, eval_metric='logloss')
     except ImportError:
-        print("[!] XGBoost yuklu degil, atlaniyor.")
+        pass
+    return {name: Pipeline([('scale', StandardScaler()), ('classifier', model)]) for name, model in estimators.items()}
 
-    return models
-
-
-def train_and_evaluate(X_train, X_test, y_train, y_test, models=None, cv_folds=5):
-    if models is None:
-        models = get_models()
-
+def train_and_evaluate(X_train, X_test, y_train, y_test, models=None, cv_folds=5, groups_train=None, dataset_kind='user_supplied'):
+    models = get_models() if models is None else models
+    if not models:
+        raise ValueError('At least one model is required.')
+    if cv_folds < 2:
+        raise ValueError('Cross-validation requires at least two folds.')
+    counts = np.bincount(y_train, minlength=2)
+    folds = min(cv_folds, int(counts.min()))
+    if groups_train is not None:
+        folds = min(folds, *(len(set(groups_train[y_train == c])) for c in (0, 1)))
+    if folds < 2:
+        raise ValueError('Need at least two training groups per class for cross-validation.')
+    cv = StratifiedGroupKFold(folds, shuffle=True, random_state=42) if groups_train is not None else StratifiedKFold(folds, shuffle=True, random_state=42)
     results = {}
-    best_model = None
-    best_f1 = 0
-    best_model_name = ''
-
-    print("\n" + "=" * 60)
-    print("MODEL EGITIMI")
-    print("=" * 60)
-
     for name, model in models.items():
-        print(f"\n--- {name} ---")
-
-        start = time.time()
+        scores = cross_val_score(model, X_train, y_train, groups=groups_train, cv=cv, scoring='f1', error_score='raise')
         model.fit(X_train, y_train)
-        train_time = time.time() - start
-
-        y_pred = model.predict(X_test)
-        y_proba = model.predict_proba(X_test)[:, 1] if hasattr(model, 'predict_proba') else None
-
-        acc = accuracy_score(y_test, y_pred)
-        prec = precision_score(y_test, y_pred, zero_division=0)
-        rec = recall_score(y_test, y_pred, zero_division=0)
-        f1 = f1_score(y_test, y_pred, zero_division=0)
-
-        cv_scores = cross_val_score(model, X_train, y_train, cv=cv_folds, scoring='f1')
-
+        predicted = model.predict(X_test)
+        probability = model.predict_proba(X_test)[:, list(model.classes_).index(1)]
         results[name] = {
-            'accuracy': acc, 'precision': prec, 'recall': rec, 'f1': f1,
-            'cv_mean': cv_scores.mean(), 'cv_std': cv_scores.std(),
-            'train_time': train_time,
+            'accuracy': float(accuracy_score(y_test, predicted)),
+            'precision': float(precision_score(y_test, predicted, zero_division=0)),
+            'recall': float(recall_score(y_test, predicted, zero_division=0)),
+            'f1': float(f1_score(y_test, predicted, zero_division=0)),
+            'roc_auc': float(roc_auc_score(y_test, probability)),
+            'cv_mean': float(scores.mean()), 'cv_std': float(scores.std()),
+            'confusion_matrix': confusion_matrix(y_test, predicted, labels=[0, 1]).tolist(),
         }
-
-        print(f"  Accuracy:  {acc:.4f}")
-        print(f"  Precision: {prec:.4f}")
-        print(f"  Recall:    {rec:.4f}")
-        print(f"  F1-Score:  {f1:.4f}")
-        print(f"  CV F1:     {cv_scores.mean():.4f}")
-
-        print_classification_report(y_test, y_pred, name)
-        plot_confusion_matrix(y_test, y_pred, name)
-        if y_proba is not None:
-            plot_roc_curve(y_test, y_proba, name)
-        if hasattr(model, 'feature_importances_'):
-            plot_feature_importance(model.feature_importances_, FEATURE_NAMES, name)
-
-        if f1 > best_f1:
-            best_f1 = f1
-            best_model = model
-            best_model_name = name
-
-    plot_model_comparison(results)
-
-    print(f"\nEn iyi model: {best_model_name} (F1: {best_f1:.4f})")
-
-    models_dir = os.path.join(PROJECT_ROOT, 'models')
-    os.makedirs(models_dir, exist_ok=True)
-
-    joblib.dump(best_model, os.path.join(models_dir, 'best_model.pkl'))
-
+    selected = max(results, key=lambda name: results[name]['cv_mean'])
+    metadata = {'selected_model': selected, 'selection_metric': 'training CV F1', 'holdout_split': 'hostname groups', 'dataset_kind': dataset_kind, 'train_samples': len(y_train), 'test_samples': len(y_test), 'cv_folds': folds, 'random_state': 42, 'trained_at': datetime.now(timezone.utc).isoformat(), 'results': results}
+    models_dir = PROJECT_ROOT / 'models'
+    models_dir.mkdir(exist_ok=True)
     for name, model in models.items():
-        model_filename = name.lower().replace(' ', '_') + '.pkl'
-        joblib.dump(model, os.path.join(models_dir, model_filename))
-
-    print(f"[+] Modeller kaydedildi: {models_dir}")
+        joblib.dump(model, models_dir / (name.lower().replace(' ', '_') + '.pkl'))
+    joblib.dump(models[selected], models_dir / 'best_model.pkl')
+    joblib.dump({'model': models[selected], 'feature_names': FEATURE_NAMES, 'metadata': metadata}, models_dir / 'model_bundle.joblib')
+    # Scaling lives inside each model pipeline, including during each CV fold.
+    (models_dir / 'scaler.pkl').unlink(missing_ok=True)
+    report = PROJECT_ROOT / 'reports/metrics.json'
+    report.parent.mkdir(exist_ok=True)
+    report.write_text(json.dumps(metadata, indent=2), encoding='utf-8')
+    print(json.dumps(metadata, indent=2))
     return results
 
-
-def main():
-    X_train, X_test, y_train, y_test, scaler = prepare_data()
-    results = train_and_evaluate(X_train, X_test, y_train, y_test)
-    print("\nEgitim tamamlandi!")
-    return results
-
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--data')
+    parser.add_argument('--cv-folds', type=int, default=5)
+    parser.add_argument('--dataset-kind', choices=['synthetic_demo', 'user_supplied'], default='user_supplied')
+    args = parser.parse_args(argv)
+    X_train, X_test, y_train, y_test, _, groups = prepare_data(args.data, return_groups=True)
+    return train_and_evaluate(X_train, X_test, y_train, y_test, cv_folds=args.cv_folds, groups_train=groups, dataset_kind=args.dataset_kind)
 
 if __name__ == '__main__':
     main()

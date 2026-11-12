@@ -1,3 +1,4 @@
+import ipaddress
 import re
 from urllib.parse import urlparse, parse_qs
 
@@ -22,15 +23,16 @@ def extract_features(url):
     except Exception:
         parsed = urlparse('')
 
-    domain = parsed.netloc or ''
+    domain = (parsed.hostname or '').lower().rstrip('.')
     path = parsed.path or ''
     query = parsed.query or ''
-
     features['url_length'] = len(url)
     features['domain_length'] = len(domain)
-
-    ip_pattern = re.compile(r'^(\d{1,3}\.){3}\d{1,3}$')
-    features['has_ip'] = 1 if ip_pattern.match(domain) else 0
+    try:
+        ipaddress.ip_address(domain)
+        features['has_ip'] = 1
+    except ValueError:
+        features['has_ip'] = 0
 
     features['has_at_sign'] = 1 if '@' in url else 0
     features['has_double_slash'] = 1 if url.count('//') > 1 else 0
@@ -40,7 +42,7 @@ def extract_features(url):
     features['num_digits'] = sum(c.isdigit() for c in url)
     features['num_special_chars'] = len(re.findall(r'[?&=%#@!~\*\+\^]', url))
 
-    domain_parts = domain.split('.')
+    domain_parts = [] if features['has_ip'] else domain.split('.')
     if domain_parts and domain_parts[0] == 'www':
         domain_parts = domain_parts[1:]
     features['subdomain_count'] = max(0, len(domain_parts) - 2)
@@ -49,7 +51,7 @@ def extract_features(url):
     features['num_params'] = len(parse_qs(query))
 
     features['has_shortener'] = 1 if any(
-        s in domain.lower() for s in SHORTENING_SERVICES
+        domain == s or domain.endswith('.' + s) for s in SHORTENING_SERVICES
     ) else 0
 
     tld = domain.split('.')[-1] if '.' in domain else ''
@@ -85,3 +87,33 @@ if __name__ == '__main__':
         print(f"\nURL: {url}")
         for k, v in feats.items():
             print(f"  {k}: {v}")
+
+
+
+def normalize_url(value):
+    """Validate a web address without visiting it. Add HTTPS for bare hostnames."""
+    if not isinstance(value, str) or not value.strip() or len(value) > 4096:
+        raise ValueError('Enter a non-empty web address (maximum 4096 characters).')
+    value = value.strip()
+    if re.search(r'[\s\\]', value):
+        raise ValueError('Whitespace and backslashes are not allowed in a web address.')
+    if not re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*:', value) or re.match(r'^[^/:]+:\d+(?:/|$)', value):
+        value = 'https://' + value
+    try:
+        parsed = urlparse(value)
+        host = parsed.hostname
+        _ = parsed.port
+        if parsed.scheme.lower() not in ('http', 'https') or not host:
+            raise ValueError()
+        ascii_host = host.encode('idna').decode('ascii')
+        try:
+            ipaddress.ip_address(ascii_host)
+        except ValueError:
+            if len(ascii_host) > 253 or '.' not in ascii_host or not all(
+                re.fullmatch(r'[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?', label)
+                for label in ascii_host.rstrip('.').split('.')
+            ):
+                raise ValueError()
+    except (ValueError, UnicodeError):
+        raise ValueError('Use a valid HTTP or HTTPS address with a hostname.') from None
+    return value
